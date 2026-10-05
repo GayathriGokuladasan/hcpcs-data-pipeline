@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 
+import os
 import psycopg2
 
 
@@ -8,11 +9,11 @@ INPUT_FILE = Path("data/processed/hcpcs_transformed.json")
 
 
 DB_CONFIG = {
-    "host": "localhost",
-    "port": 5432,
-    "database": "hcpcs_db",
-    "user": "hcpcs_user",
-    "password": "hcpcs_password",
+    "host": os.getenv("DB_HOST", "localhost"),
+    "port": int(os.getenv("DB_PORT", "5432")),
+    "database": os.getenv("DB_NAME", "hcpcs_db"),
+    "user": os.getenv("DB_USER", "hcpcs_user"),
+    "password": os.getenv("DB_PASSWORD", "hcpcs_password"),
 }
 
 
