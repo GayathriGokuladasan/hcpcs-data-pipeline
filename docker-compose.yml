@@ -20,18 +20,14 @@ services:
     depends_on:
       - postgres
 
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-
-    dns:
-      - 168.63.129.16
+    network_mode: host
 
     environment:
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://hcpcs_user:hcpcs_password@host.docker.internal:5432/airflow_db
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://hcpcs_user:hcpcs_password@localhost:5432/airflow_db
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
       AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "true"
 
-      DB_HOST: host.docker.internal
+      DB_HOST: localhost
       DB_PORT: "5432"
       DB_NAME: hcpcs_db
       DB_USER: hcpcs_user
@@ -40,9 +36,6 @@ services:
       PYTHONPATH: /opt/airflow/project
 
       _PIP_ADDITIONAL_REQUIREMENTS: "requests beautifulsoup4 psycopg2-binary"
-
-    ports:
-      - "8080:8080"
 
     volumes:
       - ./airflow/dags:/opt/airflow/dags

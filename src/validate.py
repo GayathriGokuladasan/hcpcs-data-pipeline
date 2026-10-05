@@ -138,6 +138,56 @@ def validate_database():
     return errors
 
 
+def update_validation_metrics(dq_failures):
+    connection = psycopg2.connect(
+        **DB_CONFIG
+    )
+
+    cursor = connection.cursor()
+
+    if dq_failures == 0:
+        cursor.execute(
+            """
+            INSERT INTO pipeline_metrics (
+                pipeline_name,
+                dq_failures,
+                last_success_ts
+            )
+            VALUES (
+                %s,
+                %s,
+                CURRENT_TIMESTAMP
+            )
+            ON CONFLICT (pipeline_name)
+            DO UPDATE SET
+                dq_failures = EXCLUDED.dq_failures,
+                last_success_ts = EXCLUDED.last_success_ts
+            """,
+            ("hcpcs_pipeline", 0)
+        )
+    else:
+        cursor.execute(
+            """
+            INSERT INTO pipeline_metrics (
+                pipeline_name,
+                dq_failures
+            )
+            VALUES (
+                %s,
+                %s
+            )
+            ON CONFLICT (pipeline_name)
+            DO UPDATE SET
+                dq_failures = EXCLUDED.dq_failures
+            """,
+            ("hcpcs_pipeline", dq_failures)
+        )
+
+    connection.commit()
+    cursor.close()
+    connection.close()
+
+
 def main():
     with INPUT_FILE.open(
         "r",
@@ -163,11 +213,14 @@ def main():
         for error in errors:
             print(f"- {error}")
 
+        update_validation_metrics(len(errors))
         raise SystemExit(1)
 
     print()
     print("PASSED")
     print("All data quality checks passed.")
+
+    update_validation_metrics(0)
 
 
 if __name__ == "__main__":

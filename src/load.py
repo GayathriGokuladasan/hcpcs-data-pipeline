@@ -17,6 +17,25 @@ DB_CONFIG = {
 }
 
 
+def update_rows_loaded(cursor, rows_loaded):
+    cursor.execute(
+        """
+        INSERT INTO pipeline_metrics (
+            pipeline_name,
+            rows_loaded
+        )
+        VALUES (
+            %s,
+            %s
+        )
+        ON CONFLICT (pipeline_name)
+        DO UPDATE SET
+            rows_loaded = EXCLUDED.rows_loaded
+        """,
+        ("hcpcs_pipeline", rows_loaded)
+    )
+
+
 def load_data():
     with INPUT_FILE.open(
         "r",
@@ -154,6 +173,8 @@ def load_data():
             )
 
             updated_count += 1
+
+    update_rows_loaded(cursor, len(records))
 
     connection.commit()
 

@@ -9,11 +9,31 @@ PROJECT_DIR = "/opt/airflow/project"
 
 def run_script(script_name):
     script_path = f"{PROJECT_DIR}/src/{script_name}"
+
     subprocess.run(
         ["python", script_path],
         cwd=PROJECT_DIR,
         check=True,
     )
+
+
+def pipeline_failure_alert(context):
+    """
+    Called automatically when an Airflow task fails.
+    """
+    task_instance = context.get("task_instance")
+
+    print("========================================")
+    print("HCPCS PIPELINE FAILURE ALERT")
+    print("========================================")
+
+    if task_instance:
+        print(f"Failed task: {task_instance.task_id}")
+        print(f"DAG: {task_instance.dag_id}")
+        print(f"Run ID: {task_instance.run_id}")
+
+    print("Please check the Airflow task logs for details.")
+    print("========================================")
 
 
 @dag(
@@ -22,6 +42,7 @@ def run_script(script_name):
     start_date=pendulum.datetime(2026, 10, 1, tz="UTC"),
     catchup=False,
     tags=["hcpcs", "data-engineering"],
+    on_failure_callback=pipeline_failure_alert,
 )
 def hcpcs_pipeline():
 
@@ -51,8 +72,16 @@ def hcpcs_pipeline():
 
     @task
     def notify():
-        print("HCPCS pipeline completed successfully.")
+        print("========================================")
+        print("HCPCS PIPELINE COMPLETED SUCCESSFULLY")
+        print("========================================")
+
         print("Extract -> Transform -> Load -> Validate -> Notify")
+
+        print("Pipeline monitoring metrics:")
+        print("- Rows loaded: tracked in pipeline_metrics")
+        print("- Last successful timestamp: tracked in pipeline_metrics")
+        print("- DQ failures: tracked in pipeline_metrics")
 
     extract_task = extract()
     transform_task = transform()
