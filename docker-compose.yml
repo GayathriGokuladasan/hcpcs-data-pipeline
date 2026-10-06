@@ -1,0 +1,53 @@
+services:
+
+  postgres:
+    image: postgres:18
+    container_name: hcpcs-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+
+  airflow:
+    image: apache/airflow:3.3.2
+    container_name: hcpcs-airflow
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    network_mode: host
+    environment:
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@localhost:5432/airflow_db
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "true"
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_NAME: ${POSTGRES_DB}
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      PYTHONPATH: /opt/airflow/project
+      _PIP_ADDITIONAL_REQUIREMENTS: "requests beautifulsoup4 psycopg2-binary"
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./data:/opt/airflow/project/data
+      - ./src:/opt/airflow/project/src
+      - ./database:/opt/airflow/project/database
+    command: standalone
+
+  metabase:
+    image: metabase/metabase:latest
+    container_name: hcpcs-metabase
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    network_mode: host
+    volumes:
+      - metabase_data:/metabase.db
+
+volumes:
+  postgres_data:
+  metabase_data:
